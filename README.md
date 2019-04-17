@@ -16,7 +16,7 @@ also this value is same.
 - `AWS_SECRET_ACCESS_KEY`  
 
 ### Replace this value in `.circleci/config.yml`  
-- `<repo name>`
+#### `<repo name>`
 This value is `goapp-template` in this picture.    
 <img width="300" alt="Screen Shot" src="https://user-images.githubusercontent.com/6281583/56255279-4dd14c80-60ff-11e9-990d-7392c819afeb.png">
 
