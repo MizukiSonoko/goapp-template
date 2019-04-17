@@ -1,0 +1,66 @@
+# Copyright © 2019 Sonoko Mizuki, Ltd. All rights reserved.
+version: 2.1
+orbs:
+  aws-ecr: circleci/aws-ecr@4.0.0
+  aws-ecs: circleci/aws-ecs@0.0.7
+
+jobs:
+  base:
+    docker:
+      - image: circleci/golang:1.11.1
+    working_directory: /go/src/github.com/MizukiSonoko/goapp-template
+    steps:
+      - checkout
+
+      - run:
+          name: install deps
+          command: |
+            GO111MODULE=on go mod vendor
+
+      - run:
+          name: build
+          command: |
+            make build
+
+      - run:
+          name: test
+          command: |
+            make test
+
+      - run:
+          name: move an artifact
+          command: |
+            mkdir /home/circleci/project/
+            mv /go/src/github.com/MizukiSonoko/goapp-template/build /home/circleci/project/build
+
+      - persist_to_workspace:
+          root: /home/circleci/project/
+          paths:
+            - .
+
+workflows:
+  version: 2
+  build_and_deploy:
+    jobs:
+      - base
+      - aws-ecr/build_and_push_image:
+          account-url: AWS_ECR_ACCOUNT_URL
+          repo: '<repo name>'
+          tag: '${CIRCLE_SHA1}'
+          dockerfile: .circleci/Dockerfile
+          attach-workspace: true
+          filters:
+            branches:
+              only:
+                - master
+          requires:
+            - base
+      - aws-ecs/deploy-service-update:
+          requires:
+            - aws-ecr/build_and_push_image
+          family: '<task name>'
+          service-name: '<service name>-service'
+          cluster-name: '<cluster name>'
+          container-image-name-updates: 'container=<container name>,image-and-tag=${AWS_ECR_ACCOUNT_URL}/<repo name>:${CIRCLE_SHA1}'
+
+        
